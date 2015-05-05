@@ -1113,6 +1113,7 @@ module
              * @constructor
              */
             function FileDrop(options) {
+                this._dragOverElements = [];
                 FileDrop.super_.apply(this, arguments);
             }
             /**
@@ -1122,6 +1123,7 @@ module
             FileDrop.prototype.events = {
                 $destroy: 'destroy',
                 drop: 'onDrop',
+                dragenter: 'onDragEnter',
                 dragover: 'onDragOver',
                 dragleave: 'onDragLeave'
             };
@@ -1155,20 +1157,35 @@ module
             /**
              * Event handler
              */
+            FileDrop.prototype.onDragEnter = function(event) {
+                if (!this._dragOverElements.length) {
+                    angular.forEach(this.uploader._directives.over, this._addOverClass, this);
+                }
+                this._dragOverElements.push(event.target);
+            };
+            /**
+             * Event handler
+             */
             FileDrop.prototype.onDragOver = function(event) {
                 var transfer = this._getTransfer(event);
                 if(!this._haveFiles(transfer.types)) return;
                 transfer.dropEffect = 'copy';
                 this._preventAndStop(event);
-                angular.forEach(this.uploader._directives.over, this._addOverClass, this);
             };
             /**
              * Event handler
              */
             FileDrop.prototype.onDragLeave = function(event) {
-                if (event.currentTarget !== this.element[0]) return;
-                this._preventAndStop(event);
-                angular.forEach(this.uploader._directives.over, this._removeOverClass, this);
+                var self = this;
+                setTimeout(function() {
+                    self._dragOverElements = self._dragOverElements.filter(function(element) {
+                        return element !== event.target;
+                    });
+                    if (!self._dragOverElements.length) {
+                        self._preventAndStop.call(self, event);
+                        angular.forEach(self.uploader._directives.over, self._removeOverClass, self);
+                    }
+                }, 1);
             };
             /**
              * Helper
